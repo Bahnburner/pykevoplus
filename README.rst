@@ -26,7 +26,7 @@ the website.
     from pykevoplus import Kevo
     locks = Kevo.GetLocks("username@email.com", "password123")
     for lock in locks:
-        print repr(lock)
+        print(repr(lock))
 
 Output::
 
@@ -51,9 +51,9 @@ Locking and Unlocking
     from pykevoplus import KevoLock
     lock = KevoLock.FromLockID(lock_id, username, password)
     lock.Unlock()
-    print lock.GetBoltState()
+    print(lock.GetBoltState())
     lock.Lock()
-    print lock.GetBoltState()
+    print(lock.GetBoltState())
 
 Output::
 
