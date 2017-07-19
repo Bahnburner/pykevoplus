@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.6
 """
 This module provides convenient wrappers for controlling Kwikset Kevo locks
 """
@@ -93,7 +93,7 @@ class Kevo(object):
         return locks
 
 def _manage_session(method):
-    """ 
+    """
     Decorator to handle the HTTP session to mykevo.com
     This allows methods in KevoLock to not have to manage auth sessions themselves
     """
@@ -309,12 +309,12 @@ class KevoLockSession(object):
 if __name__ == "__main__":
     from getpass import getpass
 
-    user = raw_input("Username: ")
+    user = input("Username: ")
     passwd = getpass("Password: ")
 
     # Scrape the mykevo.com site to find the locks
     for kevolock in Kevo.GetLocks(user, passwd):
-        print repr(kevolock)
+        print(repr(kevolock))
 
     # Instantiate locks from IDs
     # Get the lock IDs by logging into mykevo.com, click Details for the lock, click Settings, the lock ID is on the right
@@ -329,4 +329,3 @@ if __name__ == "__main__":
 #    with KevoLockSession(kevolock):
 #        kevolock.Unlock()
 #        kevolock.Lock()
-
