@@ -3,7 +3,7 @@ import os
 
 setup(
     name = "pykevoplus3",
-    version = "1.0.1",
+    version = "3.0.1",
     author = "Tristan Caulfield",
     author_email = "tcaulfld@gmail.com",
     description = "Control Kwikset Kevo locks",
