@@ -1,8 +1,10 @@
 ==========
-pykevoplus
+pykevoplus3
 ==========
 
-Python module for controlling Kwikset Kevo locks
+This is a Python3 fork of the original module for controlling Kwikset Kevo locks written by CSeelye.
+
+Per Cseelye:
 
 Kwikset does not provide an official API for their Kevo locks; I reverse
 engineered this module from the mykevo.com web app.
