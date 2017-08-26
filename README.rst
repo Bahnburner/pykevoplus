@@ -13,7 +13,7 @@ To use this module you will need to have a `Kevo Plus`_ installed and a
 registered account on `mykevo.com`_. You will need your mykevo.com
 credentials to use this module.
 
-This module is published to `pypi`_ so you can install it simply via ``pip install pykevoplus``
+This module is published to `pypi`_ so you can install it simply via ``pip install pykevocontrol``
 
 Usage
 =====
