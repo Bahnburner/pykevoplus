@@ -86,5 +86,5 @@ Known Issues
 
 .. _Kevo Plus: http://www.kwikset.com/kevo/plus
 .. _mykevo.com: mykevo.com
-.. _pypi: https://pypi.python.org/pypi/pykevoplus
+.. _pypi: https://pypi.python.org/pypi/pykevocontrol
 
