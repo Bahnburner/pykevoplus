@@ -103,7 +103,7 @@ def _manage_session(method):
         if not self.session:
             self.session = requests.Session()
             Kevo.Login(self.session, self.username, self.password)
-            close_session = True
+           # close_session = True
         try:
             return method(self, *args, **kwargs)
         finally:
