@@ -211,7 +211,7 @@ class KevoLock(object):
         Refresh the internal state of this lock object with the state from the real lock
         """
         lock_info_url = Kevo.COMMANDS_URL_BASE + "/lock.json?arguments={}".format(self.lockID)
-        info_result = self.session.get(lock_info_url, cookies = {{{'_kevoweb_sessions': self.cookie}})
+        info_result = self.session.get(lock_info_url, cookies = {{'_kevoweb_sessions': self.cookie}})
         if info_result.status_code != 200:
             raise KevoError("Error getting lock info: {}".format(info_result.text))
         self.data = json.loads(info_result.text)
@@ -242,7 +242,7 @@ class KevoLock(object):
         Lock this lock.  If the lock is already locked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_lock.json?arguments={}".format(self.lockID)
-        self.session.get(command_url, cookies = {{{'_kevoweb_sessions': self.cookie}})
+        self.session.get(command_url, cookies = {{'_kevoweb_sessions': self.cookie}})
         self.WaitForLocked()
 
     @_manage_session
@@ -251,7 +251,7 @@ class KevoLock(object):
         Unlock this lock.  If the lock is already unlocked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_unlock.json?arguments={}".format(self.lockID)
-        self.session.get(command_url, cookies = {{{'_kevoweb_sessions': self.cookie}})
+        self.session.get(command_url, cookies = {{'_kevoweb_sessions': self.cookie}})
         self.WaitForUnlocked()
 
     @_manage_session
