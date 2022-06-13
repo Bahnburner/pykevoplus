@@ -65,7 +65,7 @@ class Kevo(object):
         result = session.post(Kevo.LOGIN_URL, login_payload)
 #        print result.status_code
 #        print result.text
-        return result
+        return result.cookies.get_dict()['_kevoweb_sessions']
 
     @staticmethod
     def GetLocks(username, password):
@@ -99,17 +99,12 @@ def _manage_session(method):
     """
     @functools.wraps(method)
     def _wrapped(self, *args, **kwargs):
-        close_session = False
-        if not self.session:
-            self.session = requests.Session()
-            Kevo.Login(self.session, self.username, self.password)
-           # close_session = True
+        if not self.cookie:
+            self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
         try:
             return method(self, *args, **kwargs)
         finally:
-            if self.session and close_session:
-                self.session.close()
-                self.session = None
+            pass
     return _wrapped
 
 class KevoLock(object):
@@ -168,7 +163,7 @@ class KevoLock(object):
         self.lockID = None
         self.name = None
         self.password = None
-        self.session = None
+        self.cookie = None
         self.state = None
         self.username = None
 
@@ -201,16 +196,14 @@ class KevoLock(object):
         """
         Start an auth session for this lock, so that multiple commands can be executed without re-authorizing each command
         """
-        self.session = requests.Session()
-        Kevo.Login(self.session, self.username, self.password)
+        self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
 
     def EndSession(self):
         """
         Finish an auth session for this lock, so that any further commands will re-authorize
         """
-        if self.session:
-            self.session.close()
-            self.session = None
+        if self.cookie:
+            self.cookie = None
 
     @_manage_session
     def Refresh(self):
@@ -218,7 +211,7 @@ class KevoLock(object):
         Refresh the internal state of this lock object with the state from the real lock
         """
         lock_info_url = Kevo.COMMANDS_URL_BASE + "/lock.json?arguments={}".format(self.lockID)
-        info_result = self.session.get(lock_info_url)
+        info_result = self.session.get(lock_info_url, cookies = {{{'_kevoweb_sessions': self.cookie}})
         if info_result.status_code != 200:
             raise KevoError("Error getting lock info: {}".format(info_result.text))
         self.data = json.loads(info_result.text)
@@ -249,7 +242,7 @@ class KevoLock(object):
         Lock this lock.  If the lock is already locked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_lock.json?arguments={}".format(self.lockID)
-        self.session.get(command_url)
+        self.session.get(command_url, cookies = {{{'_kevoweb_sessions': self.cookie}})
         self.WaitForLocked()
 
     @_manage_session
@@ -258,7 +251,7 @@ class KevoLock(object):
         Unlock this lock.  If the lock is already unlocked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_unlock.json?arguments={}".format(self.lockID)
-        self.session.get(command_url)
+        self.session.get(command_url, cookies = {{{'_kevoweb_sessions': self.cookie}})
         self.WaitForUnlocked()
 
     @_manage_session
