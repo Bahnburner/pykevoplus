@@ -192,7 +192,7 @@ class KevoLock(object):
             timeout:    how long to wait before giving up, in seconds (int)
         """
         start_time = time.time()
-		time.sleep(2)
+        time.sleep(2)
         while True:
             self.Refresh()
             if self.data["bolt_state"].lower() == state.lower():
