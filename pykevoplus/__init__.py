@@ -166,6 +166,7 @@ class KevoLock(object):
         self.cookie = None
         self.state = None
         self.username = None
+		self.session = requests.Session() 
 
     def __str__(self):
         return "{}: {}".format(self.name, self.state)
