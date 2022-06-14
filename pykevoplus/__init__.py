@@ -220,7 +220,7 @@ class KevoLock(object):
         Refresh the internal state of this lock object with the state from the real lock
         """
         lock_info_url = Kevo.COMMANDS_URL_BASE + "/lock.json?arguments={}".format(self.lockID)
-        info_result = __DoApiCall(lock_info_url)
+        info_result = self.__DoApiCall(lock_info_url)
         if info_result.status_code != 200:
             raise KevoError("Error getting lock info: {}".format(info_result.text))
         self.data = json.loads(info_result.text)
@@ -251,7 +251,7 @@ class KevoLock(object):
         Lock this lock.  If the lock is already locked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_lock.json?arguments={}".format(self.lockID)
-        __DoApiCall(command_url)
+        self.__DoApiCall(command_url)
         self.WaitForLocked()
 
     @_manage_session
@@ -260,7 +260,7 @@ class KevoLock(object):
         Unlock this lock.  If the lock is already unlocked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_unlock.json?arguments={}".format(self.lockID)
-        __DoApiCall(command_url)
+        self.__DoApiCall(command_url)
         self.WaitForUnlocked()
 
     @_manage_session
