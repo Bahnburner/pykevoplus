@@ -174,7 +174,14 @@ class KevoLock(object):
     def __repr__(self):
         return "KevoLock(name={}, id={}, state={})".format(self.name, self.lockID, self.state)
 
+    def __DoApiCall(url):
+        api_result = self.session.get(url, cookies = {'_kevoweb_sessions': self.cookie})
+        if api_result.status >= 400:
+            self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
+            api_result = self.session.get(url, cookies = {'_kevoweb_sessions': self.cookie})
 
+        return api_result
+	
     @_manage_session
     def _WaitForState(self, state, timeout=20):
         """
@@ -185,13 +192,14 @@ class KevoLock(object):
             timeout:    how long to wait before giving up, in seconds (int)
         """
         start_time = time.time()
+		time.sleep(2)
         while True:
             self.Refresh()
             if self.data["bolt_state"].lower() == state.lower():
                 break
             if time.time() - start_time > timeout:
                 raise KevoError("Timeout waiting for {}".format(state.lower()))
-            time.sleep(1)
+            time.sleep(5)
 
     def StartSession(self):
         """
@@ -212,7 +220,7 @@ class KevoLock(object):
         Refresh the internal state of this lock object with the state from the real lock
         """
         lock_info_url = Kevo.COMMANDS_URL_BASE + "/lock.json?arguments={}".format(self.lockID)
-        info_result = self.session.get(lock_info_url, cookies = {'_kevoweb_sessions': self.cookie})
+        info_result = __DoApiCall(lock_info_url)
         if info_result.status_code != 200:
             raise KevoError("Error getting lock info: {}".format(info_result.text))
         self.data = json.loads(info_result.text)
@@ -243,7 +251,7 @@ class KevoLock(object):
         Lock this lock.  If the lock is already locked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_lock.json?arguments={}".format(self.lockID)
-        self.session.get(command_url, cookies = {'_kevoweb_sessions': self.cookie})
+        __DoApiCall(command_url)
         self.WaitForLocked()
 
     @_manage_session
@@ -252,7 +260,7 @@ class KevoLock(object):
         Unlock this lock.  If the lock is already unlocked, this method has no effect.
         """
         command_url = Kevo.COMMANDS_URL_BASE + "/remote_unlock.json?arguments={}".format(self.lockID)
-        self.session.get(command_url, cookies = {'_kevoweb_sessions': self.cookie})
+        __DoApiCall(command_url)
         self.WaitForUnlocked()
 
     @_manage_session
