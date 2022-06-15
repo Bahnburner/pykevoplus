@@ -129,6 +129,27 @@ class KevoLock(object):
         lock.password = password
         lock.Refresh()
         return lock
+        
+    @staticmethod
+    def FromLockIDWithCookie(lockID, username, password, cookie):
+        """
+        Create a KevoLock from the ID of the lock
+
+        Args:
+            lockID:     the UUID of the lock (str)
+            username:   your mykevo.com username (str)
+            password:   your mykevo.com password (str)
+
+        Returns:
+            A ready to use lock object (KevoLock)
+        """
+        lock = KevoLock()
+        lock.lockID = lockID
+        lock.username = username
+        lock.password = password
+        lock.cookie = cookie
+        lock.Refresh()
+        return lock
 
     @staticmethod
     def FromJSON(lockJSON, username, password):
