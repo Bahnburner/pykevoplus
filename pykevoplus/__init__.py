@@ -63,8 +63,6 @@ class Kevo(object):
             "authenticity_token" : token
         }
         result = session.post(Kevo.LOGIN_URL, login_payload)
-#        print result.status_code
-#        print result.text
         return result.cookies.get_dict()['_kevoweb_sessions']
 
     @staticmethod
@@ -174,9 +172,9 @@ class KevoLock(object):
     def __repr__(self):
         return "KevoLock(name={}, id={}, state={})".format(self.name, self.lockID, self.state)
 
-    def __DoApiCall(url):
+    def __DoApiCall(self, url):
         api_result = self.session.get(url, cookies = {'_kevoweb_sessions': self.cookie})
-        if api_result.status >= 400:
+        if api_result.status_code >= 400:
             self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
             api_result = self.session.get(url, cookies = {'_kevoweb_sessions': self.cookie})
 
