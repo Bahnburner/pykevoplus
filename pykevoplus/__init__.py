@@ -47,7 +47,7 @@ class Kevo(object):
         return token
 
     @staticmethod
-    def Login(session, username, password):
+    def Login(username, password):
         """
         Login a session to mykevo.com
 
@@ -56,6 +56,7 @@ class Kevo(object):
             username:   your mykevo.com username (str)
             password:   your mykevo.com password (str)
         """
+        session = requests.Session()
         token = Kevo.GetAuthToken(session)
         login_payload = {
             "user[username]" : username,
@@ -79,7 +80,7 @@ class Kevo(object):
         """
         locks = []
         with requests.Session() as session:
-            result = Kevo.Login(session, username, password)
+            result = Kevo.Login(username, password)
             lock_page = BeautifulSoup(result.text, "html.parser")
             for lock in lock_page.find_all("ul", "lock"):
                 lock_info = lock.find("div", class_="lock_unlock_container")
@@ -98,7 +99,7 @@ def _manage_session(method):
     @functools.wraps(method)
     def _wrapped(self, *args, **kwargs):
         if not self.cookie:
-            self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
+            self.cookie = Kevo.Login(self.username, self.password)
         try:
             return method(self, *args, **kwargs)
         finally:
@@ -196,7 +197,7 @@ class KevoLock(object):
     def __DoApiCall(self, url):
         api_result = self.session.get(url, cookies = {'_kevoweb_sessions': self.cookie})
         if api_result.status_code >= 400:
-            self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
+            self.cookie = Kevo.Login(self.username, self.password)
             api_result = self.session.get(url, cookies = {'_kevoweb_sessions': self.cookie})
 
         return api_result
@@ -224,7 +225,7 @@ class KevoLock(object):
         """
         Start an auth session for this lock, so that multiple commands can be executed without re-authorizing each command
         """
-        self.cookie = Kevo.Login(requests.Session(), self.username, self.password)
+        self.cookie = Kevo.Login(self.username, self.password)
 
     def EndSession(self):
         """
