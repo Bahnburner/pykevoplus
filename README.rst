@@ -2,6 +2,8 @@
 pykevoplus3
 ==========
 
+This is a fork of the below with fixes and performance improvements.
+
 This is a Python3 fork of the original module for controlling Kwikset Kevo locks written by CSeelye.
 
 Per Cseelye:
