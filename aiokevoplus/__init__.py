@@ -450,11 +450,11 @@ class KevoLock:
         self._battery_level = battery_level
         self._is_locking = False
         self._is_unlocking = False
-        if state in ("Locked", "LockedJam"):
+        if state in ("Locked", "LockedBoltJam"):
             self._is_locked = True
         else:
             self._is_locked = False
-        if state in ("UnlockedJam", "LockedJam"):
+        if state in ("BoltJam", "UnlockedBoltJam", "LockedBoltJam"):
             self._is_jammed = True
         else:
             self._is_jammed = False
