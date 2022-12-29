@@ -23,6 +23,10 @@ _LOGGER = logging.getLogger(__name__)
 from aiokevoplus.const import (
     CLIENT_ID,
     CLIENT_SECRET,
+    COMMAND_STATUS_CANCELLED,
+    COMMAND_STATUS_COMPLETE,
+    COMMAND_STATUS_DELIVERED,
+    COMMAND_STATUS_PROCESSING,
     LOCK_STATE_JAM,
     LOCK_STATE_LOCK,
     LOCK_STATE_LOCK_JAM,
@@ -350,6 +354,10 @@ class KevoApi:
                 if lock is not None:
                     lock.battery_level = message_body["batteryLevel"]
                     boltState = message_body["boltState"]
+                    command = message_body["command"]
+                    command_status = None
+                    if command is not None:
+                        command_status = command["status"]
                     if boltState == LOCK_STATE_LOCK:
                         lock.is_locked = True
                         lock.is_jammed = False
@@ -369,6 +377,23 @@ class KevoApi:
                         lock.is_jammed = None
                         lock.is_locked = None
 
+                    if command_status is not None:
+                        if command_status in (
+                            COMMAND_STATUS_COMPLETE,
+                            COMMAND_STATUS_CANCELLED,
+                        ):
+                            lock.is_locking = False
+                            lock.is_unlocking = False
+                        elif command_status in (
+                            COMMAND_STATUS_PROCESSING,
+                            COMMAND_STATUS_DELIVERED,
+                        ):
+                            if command["type"] == LOCK_STATE_LOCK:
+                                lock.is_locking = True
+                                lock.is_unlocking = False
+                            else:
+                                lock.is_locking = False
+                                lock.is_unlocking = True
                     for callback in self._callbacks:
                         try:
                             callback(lock)
@@ -423,6 +448,8 @@ class KevoLock:
         self._name = name
         self._firmware = firmware
         self._battery_level = battery_level
+        self._is_locking = False
+        self._is_unlocking = False
         if state in ("Locked", "LockedJam"):
             self._is_locked = True
         else:
@@ -482,6 +509,26 @@ class KevoLock:
     def is_jammed(self, value):
         """Update the jammed state."""
         self._is_jammed = value
+
+    @property
+    def is_locking(self):
+        """Retrieve the locking state."""
+        return self._is_locking
+
+    @is_locking.setter
+    def is_locking(self, value):
+        """Update the locking state."""
+        self._is_locking = value
+
+    @property
+    def is_unlocking(self):
+        """Retrieve the unlocking state."""
+        return self._is_unlocking
+
+    @is_unlocking.setter
+    def is_unlocking(self, value):
+        """Update the unlocking state."""
+        self._is_unlocking = value
 
     @property
     def brand(self):
