@@ -161,6 +161,21 @@ class KevoApi:
         """Generate a client nonce."""
         return base64.b64encode(secrets.token_bytes(64)).decode()
 
+    async def __get_headers(self):
+        """Retrieve the headers needed to make api calls."""
+        cnonce = self.__get_client_nonce()
+        snonce = await self.__get_server_nonce()
+
+        headers = {
+            "X-unikey-cnonce": cnonce,
+            "X-unikey-context": "Web",
+            "X-unikey-nonce": snonce,
+            "Authorization": "Bearer " + self._access_token,
+            "Accept": "application/json",
+        }
+
+        return headers
+
     async def async_refresh_token(self):
         """Refresh the access token."""
         client = httpx.AsyncClient()
@@ -183,47 +198,73 @@ class KevoApi:
     async def _api_post(self, url, body):
         """POST to the API."""
         client = httpx.AsyncClient()
-        cnonce = self.__get_client_nonce()
-        snonce = await self.__get_server_nonce()
 
         # Reauth if needed
         if self._expires_at < time.time() + 100:
             await self.async_refresh_token()
 
-        headers = {
-            "X-unikey-cnonce": cnonce,
-            "X-unikey-context": "Web",
-            "X-unikey-nonce": snonce,
-            "Authorization": "Bearer " + self._access_token,
-            "Accept": "application/json",
-        }
+        headers = await self.__get_headers()
 
         res = await client.post(
             UNIKEY_API_URL_BASE + url,
             headers=headers,
             json=body,
         )
-        res.raise_for_status()
+        try:
+            res.raise_for_status()
+        except httpx.HTTPStatusError as ex:
+            if ex.response.status_code == 403:
+                await self.async_refresh_token()
+                headers = await self.__get_headers()
+                res = await client.post(
+                    UNIKEY_API_URL_BASE + url,
+                    headers=headers,
+                    json=body,
+                )
+                try:
+                    res.raise_for_status()
+                except httpx.HTTPStatusError as retryex:
+                    if retryex.response.status_code == 403:
+                        raise KevoAuthError()
+                    else:
+                        raise
+            else:
+                raise
         return res.json()
 
     async def get_locks(self):
         """Retrieve the list of available locks."""
         client = httpx.AsyncClient()
-        cnonce = self.__get_client_nonce()
-        snonce = await self.__get_server_nonce()
+        headers = await self.__get_headers()
 
-        headers = {
-            "X-unikey-cnonce": cnonce,
-            "X-unikey-context": "Web",
-            "X-unikey-nonce": snonce,
-            "Authorization": "Bearer " + self._access_token,
-            "Accept": "application/json",
-        }
+        # Reauth if needed
+        if self._expires_at < time.time() + 100:
+            await self.async_refresh_token()
+
         res = await client.get(
             UNIKEY_API_URL_BASE + "/api/v2/users/" + self._user_id + "/locks",
             headers=headers,
         )
-        res.raise_for_status()
+        try:
+            res.raise_for_status()
+        except httpx.HTTPStatusError as ex:
+            if ex.response.status_code == 403:
+                await self.async_refresh_token()
+                headers = await self.__get_headers()
+                res = await client.get(
+                    UNIKEY_API_URL_BASE + "/api/v2/users/" + self._user_id + "/locks",
+                    headers=headers,
+                )
+                try:
+                    res.raise_for_status()
+                except httpx.HTTPStatusError as retryex:
+                    if retryex.response.status_code == 403:
+                        raise KevoAuthError()
+                    else:
+                        raise
+                raise KevoAuthError()
+            else:
+                raise
         json_response = res.json()
         lock_response = json_response["locks"]
         self._devices = []
