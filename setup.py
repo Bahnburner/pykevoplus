@@ -3,7 +3,7 @@ import os
 
 setup(
     name="aiokevoplus",
-    version="4.0.4",
+    version="4.0.5",
     author="Dominick Meglio",
     author_email="dmeglio@gmail.com",
     description="Control Kwikset Kevo locks",
