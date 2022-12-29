@@ -8,3 +8,6 @@ UNIKEY_INVALID_LOGIN_URL = "https://identity.unikey.com/account/loginlocal"
 
 LOCK_STATE_LOCK = 1
 LOCK_STATE_UNLOCK = 2
+LOCK_STATE_JAM = 8
+LOCK_STATE_LOCK_JAM = 9
+LOCK_STATE_UNLOCK_JAM = 10

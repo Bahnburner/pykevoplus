@@ -23,8 +23,11 @@ _LOGGER = logging.getLogger(__name__)
 from aiokevoplus.const import (
     CLIENT_ID,
     CLIENT_SECRET,
+    LOCK_STATE_JAM,
     LOCK_STATE_LOCK,
+    LOCK_STATE_LOCK_JAM,
     LOCK_STATE_UNLOCK,
+    LOCK_STATE_UNLOCK_JAM,
     TENANT_ID,
     UNIKEY_API_URL_BASE,
     UNIKEY_INVALID_LOGIN_URL,
@@ -230,6 +233,7 @@ class KevoApi:
                     lock["firmwareVersion"],
                     lock["batteryLevel"],
                     lock["boltState"],
+                    lock["brand"],
                 )
             )
         return self._devices
@@ -347,12 +351,23 @@ class KevoApi:
                     lock.battery_level = message_body["batteryLevel"]
                     boltState = message_body["boltState"]
                     if boltState == LOCK_STATE_LOCK:
-                        lock.lock_state = "Locked"
+                        lock.is_locked = True
+                        lock.is_jammed = False
                     elif boltState == LOCK_STATE_UNLOCK:
-                        lock.lock_state = "Unlocked"
+                        lock.is_locked = False
+                        lock.is_jammed = False
+                    elif boltState == LOCK_STATE_JAM:
+                        lock.is_jammed = True
+                    elif boltState == LOCK_STATE_LOCK_JAM:
+                        lock.is_jammed = True
+                        lock.is_locked = True
+                    elif boltState == LOCK_STATE_UNLOCK_JAM:
+                        lock.is_jammed = True
+                        lock.is_locked = False
                     else:
                         _LOGGER.warn("Unknown lock state %s", boltState)
-                        lock.lock_state = "Unknown"
+                        lock.is_jammed = None
+                        lock.is_locked = None
 
                     for callback in self._callbacks:
                         try:
@@ -402,13 +417,21 @@ class KevoApi:
 
 
 class KevoLock:
-    def __init__(self, api, lock_id, name, firmware, battery_level, state):
+    def __init__(self, api, lock_id, name, firmware, battery_level, state, brand):
         self._api = api
         self._lock_id = lock_id
         self._name = name
         self._firmware = firmware
         self._battery_level = battery_level
-        self._lock_state = state
+        if state in ("Locked", "LockedJam"):
+            self._is_locked = True
+        else:
+            self._is_locked = False
+        if state in ("UnlockedJam", "LockedJam"):
+            self._is_jammed = True
+        else:
+            self._is_jammed = False
+        self._brand = brand
 
     @property
     def lock_id(self):
@@ -441,14 +464,34 @@ class KevoLock:
         self._battery_level = value
 
     @property
-    def lock_state(self):
+    def is_locked(self):
         """Retrieve the lock state."""
-        return self._lock_state
+        return self._is_locked
 
-    @lock_state.setter
-    def lock_state(self, value):
+    @is_locked.setter
+    def is_locked(self, value):
         """Update the lock state."""
-        self._lock_state = value
+        self._is_locked = value
+
+    @property
+    def is_jammed(self):
+        """Retrieve the jammed state."""
+        return self._is_jammed
+
+    @is_jammed.setter
+    def is_jammed(self, value):
+        """Update the jammed state."""
+        self._is_jammed = value
+
+    @property
+    def brand(self):
+        """Retrieve the lock brand."""
+        return self._brand
+
+    @brand.setter
+    def brand(self, value):
+        """Update the lock brand."""
+        self._brand = value
 
     async def lock(self):
         """Lock the lock."""
