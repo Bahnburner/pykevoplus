@@ -49,6 +49,8 @@ class KevoAuthError(KevoError):
 
 
 class KevoApi:
+    MAX_RECONNECT_DELAY: int = 240
+
     def __init__(self, device_id=None):
         self._expires_at = 0
         self._refresh_token = None
@@ -443,11 +445,29 @@ class KevoApi:
         except Exception as ex:
             _LOGGER.error("Exception occurred reading websocket message: %s", ex)
 
+    async def __websocket_reconnect(self):
+        """Reconnect to the websocket if an error occurs."""
+        self._reconnect_attempts += 1
+        reconnect_delay = 2**self._reconnect_attempts
+        if reconnect_delay > self.MAX_RECONNECT_DELAY:
+            reconnect_delay = self.MAX_RECONNECT_DELAY
+        await asyncio.sleep(reconnect_delay)
+        self._websocket_task = asyncio.create_task(self.__websocket_connect())
+
     async def __websocket_connect(self):
         """Connect to the websocket."""
         auth_token = quote(f"Bearer {self._access_token}", safe="!~*'()")
         cnonce = self.__get_client_nonce()
-        snonce = await self.__get_server_nonce()
+        snonce = None
+        try:
+            snonce = await self.__get_server_nonce()
+        except httpx.HTTPStatusError as ex:
+            raise
+        except:
+            _LOGGER.error("Failed to retrieve server nonce, retrying")
+            await self.__websocket_reconnect()
+            return
+
         verification = quote(
             self.__generate_websocket_verification(cnonce, snonce), safe="!~*'()"
         )
@@ -456,18 +476,25 @@ class KevoApi:
         query_string = f"?Authorization={auth_token}&X-unikey-context=web&X-unikey-cnonce={cnonce}&X-unikey-nonce={snonce}&X-unikey-request-verification={verification}&X-unikey-message-content-type=application%2Fjson&"
         async for websocket in websockets.connect(
             UNIKEY_WS_URL_BASE + "/v3/web/" + self._user_id + query_string,
-            ping_interval=None,
+            ping_interval=10,
             user_agent_header="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
         ):
+            self._reconnect_attempts = 0
             try:
                 async for message in websocket:
                     self.__process_message(message)
             except websockets.ConnectionClosed:
-                _LOGGER.error("Lost connection to websocket")
-                continue
+                _LOGGER.error("Lost connection to websocket, retrying")
+                await self.__websocket_reconnect()
+                return
+            except Exception as ex:
+                _LOGGER.error("Error on websocket, %s, retrying", ex)
+                await self.__websocket_reconnect()
+                return
 
     async def websocket_connect(self):
         """Connect to the websocket via a task."""
+        self._reconnect_attempts = 0
         if self._websocket_task is not None:
             self._websocket_task.cancel()
         self._websocket_task = asyncio.create_task(self.__websocket_connect())
